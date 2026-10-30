@@ -1,0 +1,2 @@
+.set WRITE_CODE, 0x40
+.set EXIT_CODE, 0x5D
