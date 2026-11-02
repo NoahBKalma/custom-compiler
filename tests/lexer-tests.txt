@@ -1,5 +1,7 @@
 a=b
 x1 + INT_MAX
 2abc
-foo@bar
+foo@time
 print(x_1)
+print("x_1")
+0.12.x

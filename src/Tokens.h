@@ -26,8 +26,8 @@ inline std::string_view delimitersOpen      = "([{";
 inline std::string_view delimitersClose     = ")]}";
 inline std::string_view quotes              = "\"\'";
 inline std::string_view endline             = ";";
-inline std::string_view operators           = "+-/*^!%&|=";
-inline std::string_view numbers             = "1234567890.";
+inline std::string_view operators           = "+-/*^!%&|=.";
+inline std::string_view numbers             = "1234567890";
 inline std::string_view identifiers          = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
 
 inline std::unordered_set<std::string> functions = {
@@ -76,4 +76,22 @@ inline TokenType checkMultiCharToken(const Token& token) {
     if (functions.contains(token.mValue)) return TokenType::Function;
     if (constants.contains(token.mValue)) return TokenType::Constant;
     return TokenType::Identifier;   // not a keyword, so it's a name
+}
+
+inline const char* typeName(TokenType t) {
+    switch (t) {
+        case TokenType::Break:          return "Break";
+        case TokenType::DelimiterOpen:  return "DelimiterOpen";
+        case TokenType::DelimiterClose: return "DelimiterClose";
+        case TokenType::Endline:        return "Endline";
+        case TokenType::Quote:          return "Quote";
+        case TokenType::Operator:       return "Operator";
+        case TokenType::Number:         return "Number";
+        case TokenType::Identifier:     return "Identifier";
+        case TokenType::String:         return "String";
+        case TokenType::Function:       return "Function";
+        case TokenType::Constant:       return "Constant";
+        case TokenType::Unknown:        return "Unknown";
+    }
+    return "?";
 }

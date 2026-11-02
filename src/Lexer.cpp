@@ -58,15 +58,19 @@ std::pair<std::vector<Token>, std::vector<std::string>> Lexer::tokenize(const st
             continue;
         }
 
-        // numbers
+        // handle decimals/periods
+        if (newToken.mValue[0] == '.' && tokens.back().mType == TokenType::Number) {
+            tokens.back().mValue += newToken.mValue;
+            if (std::ranges::count(tokens.back().mValue, '.') == 2)
+                errors.push_back("Two decimals in " + tokens.back().mValue);
+            continue;
+        }
+
+        // handle numbers
         if (newToken.mType == TokenType::Number) {
             switch (tokens.back().mType) {
                 case TokenType::Number:
-                    tokens.back().mValue += newToken.mValue;
-                    if (std::ranges::count(tokens.back().mValue, '.') == 2)
-                        errors.push_back("Two decimals in " + tokens.back().mValue);
-                    break;
-                case TokenType::Identifier:
+                case TokenType::Identifier:         // x1, foo2
                     tokens.back().mValue += newToken.mValue;
                     break;
                 default:
@@ -114,13 +118,14 @@ std::pair<std::vector<Token>, std::vector<std::string>> Lexer::tokenize(const st
     // Checks for unterminated strings
     if (inQuotes) errors.emplace_back("Unterminated string");
 
-    // final pass to convert chars and unknowns to language constants, vars, and funcs
-    for (Token& token : tokens)
-        if (token.mType == TokenType::Identifier)
+    // final pass to convert identifiers to constants or functions
+    for (Token& token : tokens) {
+        if (token.mType == TokenType::Identifier) {
             token.mType = checkMultiCharToken(token);
-        else if (token.mType == TokenType::Unknown)
+        } else if (token.mType == TokenType::Unknown) {
             errors.emplace_back("Unknown token: " + token.mValue);
-
+        }
+    }
     // check if unknowns are multichar things
     return {tokens, errors};
 }

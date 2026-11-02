@@ -5,10 +5,15 @@
 #include "Tokens.h"
 #include "Lexer.h"
 
+
+static std::string redText(const std::string& message) {
+    return "\033[31m" + message + "\033[0m";
+}
+
 // Runs a shell command, prints an error and returns false if it fails
 static bool runCmd(const char* cmd) {
     if (std::system(cmd) != 0) {
-        std::cerr << "Error: Command Failed: " << cmd << "\n";
+        std::cerr << redText("Error: Command Failed: ") << cmd << "\n";
         return false;
     }
     return true;
@@ -30,14 +35,14 @@ static int lexerTest() {
 
         std::vector<Token> lineTokenVec = tokenized.first;
         for (const Token& token : lineTokenVec) {
-            std::cout << token.mValue << ", ";
+            std::cout << token.mValue << " (" << typeName(token.mType) << "), ";
         }
 
         for (std::string& error : tokenized.second) {
-            std::cout << error << std::endl;
+            std::cerr << "\n" << redText(error);
         }
 
-        std::cout << std::endl;
+        std::cout << std::endl << std::endl;
     }
 
     // Close the file
@@ -48,13 +53,13 @@ static int lexerTest() {
 int main(const int argc, const char* argv[]) {
 
     if (argc < 2) { // no missing file to compile argument
-        std::cerr << "Missing argument.\nUsage: compiler.exe " << "<input file>\n";
+        std::cerr << redText("Missing argument.\nUsage: compiler.exe <input file>\n");
         return 1;
     }
 
     int lexerTestResult = lexerTest();
     if (lexerTestResult == 1) {
-        std::cerr << "Error in lexerTest" << std::endl;
+        std::cerr << redText("Error in lexerTest") << std::endl;
     }
 
 
