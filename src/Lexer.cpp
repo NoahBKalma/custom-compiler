@@ -42,71 +42,58 @@ std::pair<std::vector<Token>, std::vector<std::string>> Lexer::tokenize(const st
             tokens.push_back(newToken);
             continue;
         }
+
         // handles breaks
         if (newToken.mType == TokenType::Break) {
-
-            if (tokens.back().mType != TokenType::DelimiterOpen ||
-                tokens.back().mType != TokenType::DelimiterClose ||
-                tokens.back().mType != TokenType::Operator ||
-                tokens.back().mType != TokenType::Endline ||
-                tokens.back().mType != TokenType::Break)
-                   tokens.push_back( newToken );
-
+            switch (tokens.back().mType) {
+                case TokenType::DelimiterOpen:
+                case TokenType::DelimiterClose:
+                case TokenType::Operator:
+                case TokenType::Endline:
+                case TokenType::Break:
+                    break;                       // drop redundant whitespace
+                default:
+                    tokens.push_back(newToken);
+            }
             continue;
         }
 
-        // handles number token input
+        // numbers
         if (newToken.mType == TokenType::Number) {
-            // Turns groups of numbers into a multi-digit number
             switch (tokens.back().mType) {
                 case TokenType::Number:
                     tokens.back().mValue += newToken.mValue;
-                    if(std::ranges::count(tokens.back().mValue, '.') == 2)
+                    if (std::ranges::count(tokens.back().mValue, '.') == 2)
                         errors.push_back("Two decimals in " + tokens.back().mValue);
                     break;
-                case TokenType::Unknown:
+                case TokenType::Identifier:
                     tokens.back().mValue += newToken.mValue;
-                    break;
-                case TokenType::Character:
-                    tokens.back().mValue += newToken.mValue;
-                    tokens.back().mType = TokenType::Unknown;
                     break;
                 default:
                     tokens.push_back(newToken);
-                    break;
             }
             continue;
         }
 
-        // handles letter token input
-        if (newToken.mType == TokenType::Character) {
+        // letters and underscore
+        if (newToken.mType == TokenType::Identifier) {
             switch (tokens.back().mType) {
-                case TokenType::Unknown:
+                case TokenType::Identifier:
                     tokens.back().mValue += newToken.mValue;
-                    break;
-                case TokenType::Character:
-                    tokens.back().mValue += newToken.mValue;
-                    tokens.back().mType = TokenType::Unknown;
                     break;
                 case TokenType::Number:
-                    errors.push_back("Cannot begin with a number.");
-                default:
+                    errors.emplace_back("Identifier cannot begin with a number");
                     tokens.push_back(newToken);
                     break;
+                default:
+                    tokens.push_back(newToken);
             }
             continue;
         }
 
-        // handles unknown input
+        // handles unrecognized symbols
         if (newToken.mType == TokenType::Unknown) {
-            switch (tokens.back().mType) {
-                case TokenType::Unknown:
-                    tokens.back().mValue += newToken.mValue;
-                    break;
-                default:
-                    tokens.push_back( newToken );
-                    break;
-            }
+            tokens.push_back(newToken);
             continue;
         }
 
@@ -125,13 +112,14 @@ std::pair<std::vector<Token>, std::vector<std::string>> Lexer::tokenize(const st
     if (!tokens.empty() && tokens.back().mType == TokenType::Break) tokens.pop_back();
 
     // Checks for unterminated strings
-    if (inQuotes) errors.push_back("Unterminated string");
+    if (inQuotes) errors.emplace_back("Unterminated string");
 
     // final pass to convert chars and unknowns to language constants, vars, and funcs
-    for (size_t i{ 0 }; i < tokens.size(); i++) {
-        if (tokens[i].mType == TokenType::Unknown || tokens[i].mType == TokenType::Character)
-            tokens[i].mType = checkMultiCharToken(tokens[i]);
-    }
+    for (Token& token : tokens)
+        if (token.mType == TokenType::Identifier)
+            token.mType = checkMultiCharToken(token);
+        else if (token.mType == TokenType::Unknown)
+            errors.emplace_back("Unknown token: " + token.mValue);
 
     // check if unknowns are multichar things
     return {tokens, errors};

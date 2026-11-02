@@ -13,11 +13,10 @@ enum class TokenType {
     Quote,
     Operator,
     Number,
-    Character,
+    Identifier,
     String,
     Function,
     Constant,
-    Variable,
     Unknown
 };
 
@@ -27,9 +26,9 @@ inline std::string_view delimitersOpen      = "([{";
 inline std::string_view delimitersClose     = ")]}";
 inline std::string_view quotes              = "\"\'";
 inline std::string_view endline             = ";";
-inline std::string_view operators           = "+-/*^!%&|";
+inline std::string_view operators           = "+-/*^!%&|=";
 inline std::string_view numbers             = "1234567890.";
-inline std::string_view characters          = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+inline std::string_view identifiers          = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
 
 inline std::unordered_set<std::string> functions = {
     "print"
@@ -37,7 +36,6 @@ inline std::unordered_set<std::string> functions = {
 inline std::unordered_set<std::string> constants = {
     "PI", "INT_MAX", "INT_MIN", "UINT_MAX"
 };
-inline std::unordered_set<std::string> variables = {};
 
 struct Token {
     std::string mValue;
@@ -56,7 +54,7 @@ struct Token {
         else if (valueInTokenType(endline)) mType = TokenType::Endline;
         else if (valueInTokenType(operators)) mType = TokenType::Operator;
         else if (valueInTokenType(numbers)) mType = TokenType::Number;
-        else if (valueInTokenType(characters)) mType = TokenType::Character;
+        else if (valueInTokenType(identifiers)) mType = TokenType::Identifier;
         else mType = TokenType::Unknown;
     }
 
@@ -77,6 +75,5 @@ inline std::string strToLower(std::string str) {
 inline TokenType checkMultiCharToken(const Token& token) {
     if (functions.contains(token.mValue)) return TokenType::Function;
     if (constants.contains(token.mValue)) return TokenType::Constant;
-    if (variables.contains(token.mValue)) return TokenType::Variable;
-    return TokenType::Unknown;
+    return TokenType::Identifier;   // not a keyword, so it's a name
 }
