@@ -9,6 +9,9 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_executable(compiler
         src/main.cpp
+        src/Lexer.cpp
+        src/Lexer.h
+        src/Tokens.h
 )
 
 # Lets RUNTIME_DIR be used in main.cpp

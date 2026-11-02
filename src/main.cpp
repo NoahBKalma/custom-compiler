@@ -1,7 +1,12 @@
 #include <iostream>
+#include <fstream>
+#include <string>
+
+#include "Tokens.h"
+#include "Lexer.h"
 
 // Runs a shell command, prints an error and returns false if it fails
-static bool run(const char* cmd) {
+static bool runCmd(const char* cmd) {
     if (std::system(cmd) != 0) {
         std::cerr << "Error: Command Failed: " << cmd << "\n";
         return false;
@@ -9,22 +14,53 @@ static bool run(const char* cmd) {
     return true;
 }
 
+static int lexerTest() {
+    // Open for reading
+    std::ifstream lexerTest("../tests/lexer-tests.txt");
+
+    // Check if file opened successfully
+    if (!lexerTest.is_open()) {
+        std::cerr << "Error: Could not open lexer test file." << std::endl;
+        return 1;
+    }
+
+    std::string line;
+    while (std::getline(lexerTest, line)) {
+        auto tokenized = Lexer::tokenize(line);
+
+        std::vector<Token> lineTokenVec = tokenized.first;
+        for (const Token& token : lineTokenVec) {
+            std::cout << token.mValue << ", ";
+        }
+
+        for (std::string& error : tokenized.second) {
+            std::cout << error << std::endl;
+        }
+
+        std::cout << std::endl;
+    }
+
+    // Close the file
+    lexerTest.close();
+    return 0;
+}
+
 int main(const int argc, const char* argv[]) {
-    // 2. Read the source file into a string
-    // 3. Lexer: source text -> tokens
-    // 4. Parser: tokens -> AST
-    // 5. Codegen: AST -> assembly text
-    // 6. Write the assembly to an output file
-    // 7. Assemble and link with the runtime (using RUNTIME_DIR)
 
     if (argc < 2) { // no missing file to compile argument
         std::cerr << "Missing argument.\nUsage: compiler.exe " << "<input file>\n";
         return 1;
     }
 
-    if (!run("as -I " RUNTIME_DIR " " RUNTIME_DIR "/start.s -o start.o")) return 1;
-    if (!run("as -I " RUNTIME_DIR " " RUNTIME_DIR "/syscalls.s -o syscalls.o")) return 1;
-    if (!run("ld start.o syscalls.o -o prog")) return 1;
+    int lexerTestResult = lexerTest();
+    if (lexerTestResult == 1) {
+        std::cerr << "Error in lexerTest" << std::endl;
+    }
+
+
+    if (!runCmd("as -I " RUNTIME_DIR " " RUNTIME_DIR "/start.s -o start.o")) return 1;
+    if (!runCmd("as -I " RUNTIME_DIR " " RUNTIME_DIR "/syscalls.s -o syscalls.o")) return 1;
+    if (!runCmd("ld start.o syscalls.o -o prog")) return 1;
 
     return 0;
 }
