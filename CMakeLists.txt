@@ -12,6 +12,9 @@ add_executable(compiler
         src/Lexer.cpp
         src/Lexer.h
         src/Tokens.h
+        src/AST.h
+        src/Parser.cpp
+        src/Parser.h
 )
 
 # Lets RUNTIME_DIR be used in main.cpp

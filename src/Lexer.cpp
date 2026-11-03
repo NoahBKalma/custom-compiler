@@ -1,11 +1,12 @@
 #include <algorithm>
-#include <stdexcept>
+#include <utility>
 
 #include "Lexer.h"
 #include "Tokens.h"
 
 std::pair<std::vector<Token>, std::vector<std::string>> Lexer::tokenize(const std::string& inputString) {
-    if(inputString.empty()) return {};
+    if(inputString.empty()) return { std::vector<Token> {{ "", TokenType::EndOfFile }}, {} };
+
     bool inQuotes = false;
     char openingQuote = ' ';
     std::vector<Token> tokens;
@@ -46,10 +47,15 @@ std::pair<std::vector<Token>, std::vector<std::string>> Lexer::tokenize(const st
         // handles breaks
         if (newToken.mType == TokenType::Break) {
             switch (tokens.back().mType) {
-                case TokenType::DelimiterOpen:
-                case TokenType::DelimiterClose:
+                case TokenType::ParenOpen:
+                case TokenType::ParenClose:
+                case TokenType::BraceOpen:
+                case TokenType::BraceClose:
+                case TokenType::BracketOpen:
+                case TokenType::BracketClose:
                 case TokenType::Operator:
                 case TokenType::Endline:
+                case TokenType::Comma:
                 case TokenType::Break:
                     break;                       // drop redundant whitespace
                 default:
@@ -101,9 +107,22 @@ std::pair<std::vector<Token>, std::vector<std::string>> Lexer::tokenize(const st
             continue;
         }
 
+        // merges two-char operators like == and <=
+        if (newToken.mType == TokenType::Operator && tokens.back().mType == TokenType::Operator
+            && !isWhitespace(inputString[i - 1])
+            && isTwoCharOperator(tokens.back().mValue + newToken.mValue)) {
+            tokens.back().mValue += newToken.mValue;
+            continue;
+        }
+
         // handles delimiters, operators, and endline
-        if (newToken.mType == TokenType::DelimiterOpen ||
-        newToken.mType == TokenType::DelimiterClose ||
+        if (newToken.mType == TokenType::ParenOpen ||
+        newToken.mType == TokenType::ParenClose ||
+        newToken.mType == TokenType::BraceOpen ||
+        newToken.mType == TokenType::BraceClose ||
+        newToken.mType == TokenType::BracketOpen ||
+        newToken.mType == TokenType::BracketClose ||
+        newToken.mType == TokenType::Comma ||
         newToken.mType == TokenType::Operator ||
         newToken.mType == TokenType::Endline) {
             // remove unneeded breaks
@@ -112,20 +131,26 @@ std::pair<std::vector<Token>, std::vector<std::string>> Lexer::tokenize(const st
             tokens.push_back(newToken);
         }
     }
-    // removes trailing whitespace
-    if (!tokens.empty() && tokens.back().mType == TokenType::Break) tokens.pop_back();
 
     // Checks for unterminated strings
     if (inQuotes) errors.emplace_back("Unterminated string");
 
-    // final pass to convert identifiers to constants or functions
+    // final pass to convert identifiers to constants or functions. Also remove all breaks
+    // copy to new vector due to break removals
+
+    std::vector<Token> cleanTokens;
     for (Token& token : tokens) {
-        if (token.mType == TokenType::Identifier) {
+        if (token.mType == TokenType::Break) continue;
+
+        if (token.mType == TokenType::Identifier)
             token.mType = checkMultiCharToken(token);
-        } else if (token.mType == TokenType::Unknown) {
+        else if (token.mType == TokenType::Unknown)
             errors.emplace_back("Unknown token: " + token.mValue);
-        }
+
+        cleanTokens.push_back(std::move(token));
     }
-    // check if unknowns are multichar things
-    return {tokens, errors};
+
+    // add end of file token to the end
+    cleanTokens.emplace_back( "", TokenType::EndOfFile );
+    return {std::move(cleanTokens), std::move(errors)};
 }
