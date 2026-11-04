@@ -109,7 +109,7 @@ inline const char* typeName(TokenType t) {
         case TokenType::Number:         return "Number";
         case TokenType::Identifier:     return "Identifier";
         case TokenType::String:         return "String";
-        case TokenType::LangFunction:       return "Function";
+        case TokenType::LangFunction:   return "Function";
         case TokenType::Constant:       return "Constant";
         case TokenType::Unknown:        return "Unknown";
         case TokenType::EndOfFile:      return "EndOfFile";

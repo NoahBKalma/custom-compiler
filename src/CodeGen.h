@@ -8,7 +8,9 @@
 class CodeGen {
 private:
     std::string mOutput;
-    std::vector<std::string> mData;
+    std::string mData;
+    std::string mText;
+    std::unordered_map<std::string, std::string> mStrings;
     std::vector<std::string> mErrors;
 
     size_t mStringCount;
@@ -16,10 +18,15 @@ private:
     // append one instruction line to output
     void emit(const std::string&, int);
 
+    // append one instruction line to data
+    void emitData(const std::string&);
+
     // store text, return its label
     std::string newStringData(const std::string&);
 
     // generate functions for each node type
+
+    void genChild(const Node*);
 
     // terminals
     void genNumber(const Number*);
@@ -28,9 +35,9 @@ private:
     void genString(const String*);
 
     // nonterminals
-    void genBinary(const BinaryOperation*);
+    void genBinaryOp(const BinaryOperation*);
     void genNegate(const Negate*);
-    void genFunction(const LangFunction*);
+    void genLangFunction(const LangFunction*);
 
     int generate_(const Node*);
 

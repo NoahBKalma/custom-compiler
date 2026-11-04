@@ -48,6 +48,9 @@ struct Identifier : Node {
         if (token.mType != TokenType::Identifier)
             throw std::runtime_error("Identifier node doesnt contain identifier token");
     }
+
+    NodeType type() const override { return NodeType::Identifier; }
+
 };
 
 struct Constant : Node {

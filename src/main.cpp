@@ -172,9 +172,6 @@ int main(const int argc, const char* argv[]) {
     CodeGen codeGenerator;
     codeGenerator.generate(treeRoot);
 
-    std::cout << "--- generated ---\n" << codeGenerator.getOutput() << "-----------------\n";
-    std::cout << "writing to: " << RUNTIME_DIR "/start.s" << "\n";
-
     std::ofstream startFile(RUNTIME_DIR"/start.s");
     if (!startFile.is_open()) {
         std::cerr << "Error: Could not open output \'start.s\' file." << std::endl;
