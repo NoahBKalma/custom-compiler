@@ -26,7 +26,7 @@ private:
 
     // generate functions for each node type
 
-    void genChild(const Node*);
+    void genTerminal(const Node*);
 
     // terminals
     void genNumber(const Number*);

@@ -8,6 +8,7 @@
 #include "Tokens.h"
 
 enum class NodeType {
+    Program,
     Number, String, Identifier, Constant,
     BinaryOperation, LangFunction, Negate
 };
@@ -15,6 +16,13 @@ enum class NodeType {
 struct Node {
     virtual ~Node() = default;
     virtual NodeType type() const = 0;
+};
+
+struct Program : Node {
+    std::vector<std::unique_ptr<Node>> lines;
+
+    NodeType type() const override { return NodeType::Program; }
+
 };
 
 // -------------------- single value tokens (terminals) --------------------

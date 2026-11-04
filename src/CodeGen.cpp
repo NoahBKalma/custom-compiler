@@ -1,4 +1,4 @@
-#include <iostream>
+#include <algorithm>
 #include <string>
 
 #include "CodeGen.h"
@@ -20,7 +20,7 @@ int CodeGen::generate(const Node* root) {
     /* ---------------------------------------------------------------------- */
 
     // put the .data section in the output
-    mOutput = ".include \"defs.inc\"\n\n.data\n";
+    mOutput = ".include \"defs.inc\"\n\n.data\n    newline: .ascii \"\\n\"\n";
     mOutput += mData;
 
     // write the .text section to the output
@@ -28,7 +28,7 @@ int CodeGen::generate(const Node* root) {
     mOutput += mText;
 
     // write the exit to the output
-    mOutput += "\n    mov x0, #0\n    b EXIT\n";
+    mOutput += "\n\n    ldr x1, =newline\nmov x2, #1\nbl WRITE\n\n    mov x0, #0\n    b EXIT\n";
     return returnVal;
 }
 
@@ -36,6 +36,14 @@ int CodeGen::generate_(const Node* node) {
     if (!node) return 0;
 
     switch (node->type()) {
+
+        case NodeType::Program: {
+            auto* program = static_cast<const Program*>(node);
+            for (const auto& line : program->lines)
+                generate_(line.get());
+            break;
+        }
+
         // nonterminals
         case NodeType::BinaryOperation: {
             auto* binOpNode = static_cast<const BinaryOperation*>(node);
@@ -61,7 +69,7 @@ int CodeGen::generate_(const Node* node) {
 
 /* --------------------- TERMINALS --------------------- */
 
-void CodeGen::genChild(const Node* node) {
+void CodeGen::genTerminal(const Node* node) {
     switch (node->type()) {
         case NodeType::Number: {
             auto* numNode = static_cast<const Number*>(node);
@@ -101,7 +109,7 @@ void CodeGen::genConstant(const Constant* constNode) {
 void CodeGen::genString(const String* strNode) {
 
     emitData("s" + std::to_string(mStringCount) + ": .ascii \"" + strNode->token.mValue + "\"");
-    mStrings[strNode->token.mValue] = "s" + std::to_string(mStringCount);
+    mStrings[strNode->token.mValue] = "s" + std::to_string(mStringCount++);
 }
 
 
@@ -110,20 +118,26 @@ void CodeGen::genString(const String* strNode) {
 void CodeGen::genBinaryOp(const BinaryOperation* binOpNode) {
 
 }
+
 void CodeGen::genNegate(const Negate* negateNode) {
 
 }
+
 void CodeGen::genLangFunction(const LangFunction* langFuncNode) {
 
     if (langFuncNode->functionToken.mValue == "print") {
-        genChild(langFuncNode->arguments[0].get());
+        genTerminal(langFuncNode->arguments[0].get());
 
         if (langFuncNode->arguments[0]->type() == NodeType::String) {
-            const auto* strToPrint = static_cast<const String*>(langFuncNode->arguments[0].get());
+            const auto* stringToken = static_cast<const String*>(langFuncNode->arguments[0].get());
+            const std::string& strToPrint = stringToken->token.mValue;
+
+            size_t len = strToPrint.length() - std::count(strToPrint.begin(), strToPrint.end(), '\\');
 
             emit("stp x29, x30, [sp, #-16]!", 1);
-            emit("ldr x1, =" + mStrings[strToPrint->token.mValue], 1);
-            emit("mov x2, #" + std::to_string(strToPrint->token.mValue.length()), 1);
+            emit("ldr x1, =" + mStrings[strToPrint], 1);
+
+            emit("mov x2, #" + std::to_string(len), 1);
             emit("bl WRITE", 1);
             emit("ldp x29, x30, [sp], #16", 1);
         }

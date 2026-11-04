@@ -21,18 +21,32 @@ const Token& Parser::nextToken() {
 }
 
 int Parser::parse() {
+    auto program = std::make_unique<Program>();
 
-    // parses a single expression (allows for single line programs right now)
-    mResultTree = parseExpression();
+    while (peekTokenType() != TokenType::EndOfFile) {
+        // allow empty statements like ";;"
+        if (peekTokenType() == TokenType::Endline) {
+            nextToken();
+            continue;
+        }
 
-    if (!mResultTree) return 1;
+        std::unique_ptr<Node> statement = parseExpression();
+        if (!statement) return 1;
 
-    // make sure whole file is parsed
-    if (peekTokenType() != TokenType::EndOfFile) {
-        mErrorMessage = "Unexpected token " + peekToken().mValue;
-        return 1;
+        if (peekTokenType() != TokenType::Endline) {
+            if (peekTokenType() == TokenType::EndOfFile)
+                mErrorMessage = "Expected ';' at end of statement.";
+            else
+                mErrorMessage = "Expected ';' but got " + peekToken().mValue;
+            return 1;
+        }
+        // move past ;
+        nextToken();
+
+        program->lines.push_back(std::move(statement));
     }
 
+    mResultTree = std::move(program);
     return 0;
 }
 
@@ -139,10 +153,11 @@ std::unique_ptr<Node> Parser::parseFinal() {
         nextToken();
         return function;
     }
-
-    if (peekTokenType() == TokenType::EndOfFile)
+    if (peekTokenType() == TokenType::EndOfFile) {
         mErrorMessage = "Reached end of file before expression parsed.";
-    else
+    }
+    else {
         mErrorMessage = "Unexpected token " + peekToken().mValue;
+    }
     return nullptr;
 }

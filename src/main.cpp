@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <string>
 
 #include "Tokens.h"
@@ -10,6 +11,10 @@
 
 static std::string redText(const std::string& message) {
     return "\033[31m" + message + "\033[0m";
+}
+
+static std::string greenText(const std::string& message) {
+    return "\033[32m" + message + "\033[0m";
 }
 
 // Runs a shell command, prints an error and returns false if it fails
@@ -147,10 +152,10 @@ int main(const int argc, const char* argv[]) {
         return 1;
     }
 
-    // lex line of code and check for errors
-    std::string line;
-    getline(sourceCode, line);
-    auto [tokenizedCode, lexerErrors] = Lexer::tokenize(line);
+    // create and write the whole file to the buffer. Then tokenize and parse the whole thing.
+    std::stringstream sourceCodeBuffer;
+    sourceCodeBuffer << sourceCode.rdbuf();
+    auto [tokenizedCode, lexerErrors] = Lexer::tokenize(sourceCodeBuffer.str());
 
     // output and break if the lexer has errors
     if (!lexerErrors.empty()) {
@@ -189,5 +194,6 @@ int main(const int argc, const char* argv[]) {
     if (!runCmd("as -I " RUNTIME_DIR " " RUNTIME_DIR "/syscalls.s -o syscalls.o")) return 1;
     if (!runCmd("ld start.o syscalls.o -o program")) return 1;
 
+    std::cout << greenText("\nProgram Compiled\n") << std::endl;
     return 0;
 }
