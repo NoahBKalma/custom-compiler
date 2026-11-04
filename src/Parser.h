@@ -14,20 +14,6 @@ private:
 
     std::string mErrorMessage;
 
-public:
-
-    // constructor
-    explicit Parser(std::vector<Token> tokenList) :
-        mLexedTokens { std::move(tokenList) },
-        mCursor { 0 },
-        mFinished { mLexedTokens[mCursor].mType == TokenType::EndOfFile } {}
-
-    // Return resulting tree
-    const Node* getResultTree() const { return mResultTree.get(); }
-
-    // Return error message
-    const std::string& getErrorMessage() const { return mErrorMessage; }
-
     // Return current token
     const Token& peekToken() const;
 
@@ -43,10 +29,6 @@ public:
     // Return current and move to next
     const Token& nextToken();
 
-    // parses everything and stores resulting tree in mResultTree
-    // return 0 is success, 1 is fail so print error
-    int parse();
-
     // parses expression and returns pointer to tree ( +, - )
     std::unique_ptr<Node> parseExpression();
 
@@ -55,4 +37,23 @@ public:
 
     // parses a terminal and returns pointer to tree ( single operand )
     std::unique_ptr<Node> parseFinal();
+
+public:
+
+    // constructor
+    explicit Parser(std::vector<Token> tokenList) :
+        mLexedTokens { std::move(tokenList) },
+        mCursor { 0 },
+        mFinished { mLexedTokens[mCursor].mType == TokenType::EndOfFile } {}
+
+    // Return resulting tree
+    const Node* getResultTree() const { return mResultTree.get(); }
+
+    // Return error message
+    const std::string& getErrorMessage() const { return mErrorMessage; }
+
+    // parses everything and stores resulting tree in mResultTree
+    // return 0 is success, 1 is fail so print error
+    int parse();
+
 };

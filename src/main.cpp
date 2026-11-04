@@ -5,6 +5,7 @@
 #include "Tokens.h"
 #include "Lexer.h"
 #include "Parser.h"
+#include "CodeGen.h"
 
 
 static std::string redText(const std::string& message) {
@@ -65,7 +66,7 @@ static void printSideways(const Node* node, size_t spaces) {
 
     auto* binary = dynamic_cast<const BinaryOperation*>(node);
     auto* negate = dynamic_cast<const Negate*>(node);
-    auto* function = dynamic_cast<const Function*>(node);
+    auto* function = dynamic_cast<const LangFunction*>(node);
     auto* number = dynamic_cast<const Number*>(node);
     auto* identifier = dynamic_cast<const Identifier*>(node);
     auto* constant = dynamic_cast<const Constant*>(node);
@@ -132,14 +133,64 @@ int main(const int argc, const char* argv[]) {
     //     std::cerr << redText("Error in lexerTest") << std::endl;
     // }
 
-    int parserTestResult = parserTest();
-    if (parserTestResult == 1) {
-        std::cerr << redText("Error in parserTest") << std::endl;
+    // int parserTestResult = parserTest();
+    // if (parserTestResult == 1) {
+    //     std::cerr << redText("Error in parserTest") << std::endl;
+    // }
+
+    /* -------------------- Read File, lex, and parse ---------------- */
+
+    // Open for reading, argv[1] is filepath
+    std::ifstream sourceCode(argv[1]);
+    if (!sourceCode.is_open()) {
+        std::cerr << "Error: Could not open lexer test file." << std::endl;
+        return 1;
     }
+
+    // lex line of code and check for errors
+    std::string line;
+    getline(sourceCode, line);
+    auto [tokenizedCode, lexerErrors] = Lexer::tokenize(line);
+
+    // output and break if the lexer has errors
+    if (!lexerErrors.empty()) {
+        for (const std::string& errorMessage : lexerErrors) {
+            std::cerr << redText(errorMessage) << std::endl;
+        }
+        return 1;
+    }
+
+    // run lexed code through the parser
+    Parser codeParser(tokenizedCode);
+
+    if (codeParser.parse() == 1) { // parse failed
+        std::cerr << redText(codeParser.getErrorMessage()) << std::endl;
+        return 1;
+    }
+    auto treeRoot = codeParser.getResultTree();
+
+    CodeGen codeGenerator;
+    codeGenerator.generate(treeRoot);
+
+    std::cout << "--- generated ---\n" << codeGenerator.getOutput() << "-----------------\n";
+    std::cout << "writing to: " << RUNTIME_DIR "/start.s" << "\n";
+
+    std::ofstream startFile(RUNTIME_DIR"/start.s");
+    if (!startFile.is_open()) {
+        std::cerr << "Error: Could not open output \'start.s\' file." << std::endl;
+        return 1;
+    }
+
+    startFile << codeGenerator.getOutput();
+
+    startFile.close();
+    sourceCode.close();
+
+
 
     if (!runCmd("as -I " RUNTIME_DIR " " RUNTIME_DIR "/start.s -o start.o")) return 1;
     if (!runCmd("as -I " RUNTIME_DIR " " RUNTIME_DIR "/syscalls.s -o syscalls.o")) return 1;
-    if (!runCmd("ld start.o syscalls.o -o prog")) return 1;
+    if (!runCmd("ld start.o syscalls.o -o program")) return 1;
 
     return 0;
 }

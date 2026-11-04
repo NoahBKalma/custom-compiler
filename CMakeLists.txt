@@ -15,6 +15,8 @@ add_executable(compiler
         src/AST.h
         src/Parser.cpp
         src/Parser.h
+        src/CodeGen.h
+        src/CodeGen.cpp
 )
 
 # Lets RUNTIME_DIR be used in main.cpp

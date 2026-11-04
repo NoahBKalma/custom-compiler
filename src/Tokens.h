@@ -1,7 +1,9 @@
 #pragma once
 
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
+#include <utility>
 
 
 // Defines token types
@@ -20,33 +22,35 @@ enum class TokenType {
     Number,
     Identifier,
     String,
-    Function,
+    LangFunction,
     Constant,
     Unknown,
     EndOfFile
 };
 
 // Specifies token types
-inline std::string_view breaks              = " \n\r\t\v\f";
-inline std::string_view parenOpen           = "(";
-inline std::string_view parenClose          = ")";
-inline std::string_view braceOpen           = "{";
-inline std::string_view braceClose          = "}";
-inline std::string_view bracketOpen         = "[";
-inline std::string_view bracketClose        = "]";
-inline std::string_view quotes              = "\"\'";
-inline std::string_view endline             = ";";
-inline std::string_view comma               = ",";
-inline std::string_view operators           = "+-/*^!%&|=.<>";
-inline std::string_view numbers             = "1234567890";
-inline std::string_view identifiers         = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
+namespace types {
+    inline constexpr std::string_view breaks              = " \n\r\t\v\f";
+    inline constexpr std::string_view parenOpen           = "(";
+    inline constexpr std::string_view parenClose          = ")";
+    inline constexpr std::string_view braceOpen           = "{";
+    inline constexpr std::string_view braceClose          = "}";
+    inline constexpr std::string_view bracketOpen         = "[";
+    inline constexpr std::string_view bracketClose        = "]";
+    inline constexpr std::string_view quotes              = "\"\'";
+    inline constexpr std::string_view endline             = ";";
+    inline constexpr std::string_view comma               = ",";
+    inline constexpr std::string_view operators           = "+-/*^!%&|=.<>";
+    inline constexpr std::string_view numbers             = "1234567890";
+    inline constexpr std::string_view identifiers         = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
 
-inline std::unordered_set<std::string> functions = {
-    "print"
-};
-inline std::unordered_set<std::string> constants = {
-    "PI", "INT_MAX", "INT_MIN", "UINT_MAX"
-};
+    inline const std::unordered_set<std::string> langFunctions = {
+        "print"
+    };
+    inline const std::unordered_map<std::string, float> constants = {
+        {"PI", 3.14},
+    };
+}
 
 inline bool isTwoCharOperator(const std::string& str) {
     return str == "==" || str == "!=" || str == "<=" || str == ">=" || str == "&&" || str == "||";
@@ -62,19 +66,19 @@ struct Token {
     // Constructor that sets the token type based on what the value is
     explicit Token(const char value) : mValue( {value} ) {
 
-        if (valueInTokenType(breaks)) mType = TokenType::Break;
-        else if (valueInTokenType(parenOpen)) mType = TokenType::ParenOpen;
-        else if (valueInTokenType(parenClose)) mType = TokenType::ParenClose;
-        else if (valueInTokenType(braceOpen)) mType = TokenType::BraceOpen;
-        else if (valueInTokenType(braceClose)) mType = TokenType::BraceClose;
-        else if (valueInTokenType(bracketOpen)) mType = TokenType::BracketOpen;
-        else if (valueInTokenType(bracketClose)) mType = TokenType::BracketClose;
-        else if (valueInTokenType(quotes)) mType = TokenType::Quote;
-        else if (valueInTokenType(endline)) mType = TokenType::Endline;
-        else if (valueInTokenType(comma)) mType = TokenType::Comma;
-        else if (valueInTokenType(operators)) mType = TokenType::Operator;
-        else if (valueInTokenType(numbers)) mType = TokenType::Number;
-        else if (valueInTokenType(identifiers)) mType = TokenType::Identifier;
+        if (valueInTokenType(types::breaks)) mType = TokenType::Break;
+        else if (valueInTokenType(types::parenOpen)) mType = TokenType::ParenOpen;
+        else if (valueInTokenType(types::parenClose)) mType = TokenType::ParenClose;
+        else if (valueInTokenType(types::braceOpen)) mType = TokenType::BraceOpen;
+        else if (valueInTokenType(types::braceClose)) mType = TokenType::BraceClose;
+        else if (valueInTokenType(types::bracketOpen)) mType = TokenType::BracketOpen;
+        else if (valueInTokenType(types::bracketClose)) mType = TokenType::BracketClose;
+        else if (valueInTokenType(types::quotes)) mType = TokenType::Quote;
+        else if (valueInTokenType(types::endline)) mType = TokenType::Endline;
+        else if (valueInTokenType(types::comma)) mType = TokenType::Comma;
+        else if (valueInTokenType(types::operators)) mType = TokenType::Operator;
+        else if (valueInTokenType(types::numbers)) mType = TokenType::Number;
+        else if (valueInTokenType(types::identifiers)) mType = TokenType::Identifier;
         else mType = TokenType::Unknown;
     }
 
@@ -83,18 +87,9 @@ struct Token {
     }
 };
 
-inline std::string strToLower(std::string str) {
-    for (char& c : str) {
-        if (0 <= c && c <= 127)
-            c = std::tolower(c);
-    }
-
-    return str;
-}
-
 inline TokenType checkMultiCharToken(const Token& token) {
-    if (functions.contains(token.mValue)) return TokenType::Function;
-    if (constants.contains(token.mValue)) return TokenType::Constant;
+    if (types::langFunctions.contains(token.mValue)) return TokenType::LangFunction;
+    if (types::constants.contains(token.mValue)) return TokenType::Constant;
     return TokenType::Identifier;   // not a keyword, so it's a name
 }
 
@@ -114,7 +109,7 @@ inline const char* typeName(TokenType t) {
         case TokenType::Number:         return "Number";
         case TokenType::Identifier:     return "Identifier";
         case TokenType::String:         return "String";
-        case TokenType::Function:       return "Function";
+        case TokenType::LangFunction:       return "Function";
         case TokenType::Constant:       return "Constant";
         case TokenType::Unknown:        return "Unknown";
         case TokenType::EndOfFile:      return "EndOfFile";

@@ -12,3 +12,4 @@ WRITE:
     mov x0, #1  // stdout
     mov x8, #WRITE_CODE
     svc #0
+    ret

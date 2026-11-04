@@ -107,9 +107,9 @@ std::unique_ptr<Node> Parser::parseFinal() {
         return std::make_unique<Negate>(negate, std::move(operand));
 
     }
-    if (peekTokenType() == TokenType::Function) {
+    if (peekTokenType() == TokenType::LangFunction) {
         Token functionToken = nextToken();
-        std::unique_ptr<Function> function = std::make_unique<Function>(functionToken);
+        std::unique_ptr<LangFunction> function = std::make_unique<LangFunction>(functionToken);
         do {
             if (peekTokenType() == TokenType::ParenOpen ||
                 (peekToken().mValue == "," && peekTokenType() == TokenType::Comma)) {

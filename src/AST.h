@@ -7,8 +7,14 @@
 
 #include "Tokens.h"
 
+enum class NodeType {
+    Number, String, Identifier, Constant,
+    BinaryOperation, LangFunction, Negate
+};
+
 struct Node {
     virtual ~Node() = default;
+    virtual NodeType type() const = 0;
 };
 
 // -------------------- single value tokens (terminals) --------------------
@@ -19,6 +25,8 @@ struct Number : Node {
         if (token.mType != TokenType::Number)
             throw std::runtime_error("Number node doesnt contain number token");
     }
+
+    NodeType type() const override { return NodeType::Number; }
 };
 
 struct String : Node {
@@ -28,6 +36,9 @@ struct String : Node {
         if (token.mType != TokenType::String)
             throw std::runtime_error("String node doesnt contain string token");
     }
+
+    NodeType type() const override { return NodeType::String; }
+
 };
 
 struct Identifier : Node {
@@ -46,6 +57,9 @@ struct Constant : Node {
         if (token.mType != TokenType::Constant)
             throw std::runtime_error("Constant node doesnt contain constant token");
     }
+
+    NodeType type() const override { return NodeType::Constant; }
+
 };
 
 // --------- operations, expresisons, and functions (nonterminals) ---------
@@ -66,20 +80,24 @@ struct BinaryOperation : Node {
         if (token.mType != TokenType::Operator)
             throw std::runtime_error("BinaryOperation node doesnt contain operator token");
     }
+
+    NodeType type() const override { return NodeType::BinaryOperation; }
+
 };
 
 // Unary operations
-struct Function : Node {
+struct LangFunction : Node {
 
     Token functionToken;
     std::vector<std::unique_ptr<Node>> arguments;
 
-    explicit Function(Token pValue) :
+    explicit LangFunction(Token pValue) :
         functionToken { std::move(pValue) } {
-        if (functionToken.mType != TokenType::Function)
+        if (functionToken.mType != TokenType::LangFunction)
             throw std::runtime_error("Function node doesnt contain function token");
-
     }
+
+    NodeType type() const override { return NodeType::LangFunction; }
 };
 
 struct Negate : Node {
@@ -94,4 +112,7 @@ struct Negate : Node {
         if (!(negateToken.mValue == "-" && negateToken.mType == TokenType::Operator))
             throw std::runtime_error("Negate node doesnt contain negate token");
     }
+
+    NodeType type() const override { return NodeType::Negate; }
+
 };
