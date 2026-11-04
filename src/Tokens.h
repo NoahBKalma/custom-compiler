@@ -48,7 +48,7 @@ namespace types {
         "print"
     };
     inline const std::unordered_map<std::string, float> constants = {
-        {"PI", 3.14},
+
     };
 }
 
