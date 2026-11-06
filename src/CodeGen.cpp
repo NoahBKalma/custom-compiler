@@ -15,7 +15,7 @@ int CodeGen::generate(const Node* root) {
 
     /* ------------------------- GENERATE CODE HERE ------------------------- */
 
-    int returnVal = generate_(root);
+    int returnVal = generateNonTerminal(root);
 
     /* ---------------------------------------------------------------------- */
 
@@ -32,7 +32,7 @@ int CodeGen::generate(const Node* root) {
     return returnVal;
 }
 
-int CodeGen::generate_(const Node* node) {
+int CodeGen::generateNonTerminal(const Node* node) {
     if (!node) return 0;
 
     switch (node->type()) {
@@ -40,7 +40,7 @@ int CodeGen::generate_(const Node* node) {
         case NodeType::Program: {
             auto* program = static_cast<const Program*>(node);
             for (const auto& line : program->lines)
-                generate_(line.get());
+                generateNonTerminal(line.get());
             break;
         }
 
@@ -69,7 +69,7 @@ int CodeGen::generate_(const Node* node) {
 
 /* --------------------- TERMINALS --------------------- */
 
-void CodeGen::genTerminal(const Node* node) {
+int CodeGen::genTerminal(const Node* node) {
     switch (node->type()) {
         case NodeType::Number: {
             auto* numNode = static_cast<const Number*>(node);
@@ -92,54 +92,155 @@ void CodeGen::genTerminal(const Node* node) {
             break;
         }
     }
+
+    return 0;
 }
 
-void CodeGen::genNumber(const Number* numNode) {
+int CodeGen::genNumber(const Number* numNode) {
 
+    if (contains(numNode->token.mValue, ".")) {
+        // numNode is a floa
+        emit("mov s0, #" + numNode->token.mValue, 1);
+    } else {
+        // numNode is an int
+        emit("mov w0, #" + numNode->token.mValue, 1);
+    }
+
+    return 0;
 }
 
-void CodeGen::genIdentifier(const Identifier* idNode) {
+int CodeGen::genIdentifier(const Identifier* idNode) {
 
+    return 0;
 }
 
-void CodeGen::genConstant(const Constant* constNode) {
+int CodeGen::genConstant(const Constant* constNode) {
 
+    return 0;
 }
 
-void CodeGen::genString(const String* strNode) {
+int CodeGen::genString(const String* strNode) {
 
     emitData("s" + std::to_string(mStringCount) + ": .ascii \"" + strNode->token.mValue + "\"");
-    mStrings[strNode->token.mValue] = "s" + std::to_string(mStringCount++);
+    mDataStrings[strNode->token.mValue] = "s" + std::to_string(mStringCount++);
+
+    return 0;
 }
 
 
 /* -------------------- NONTERMINALS -------------------- */
 
-void CodeGen::genBinaryOp(const BinaryOperation* binOpNode) {
+int CodeGen::genBinaryOp(const BinaryOperation* binOpNode) {
 
+    return 0;
 }
 
-void CodeGen::genNegate(const Negate* negateNode) {
+int CodeGen::genNegate(const Negate* negateNode) {
 
+    return 0;
 }
 
-void CodeGen::genLangFunction(const LangFunction* langFuncNode) {
-
+int CodeGen::genLangFunction(const LangFunction* langFuncNode) {
+    // ANY CHANGES TO PRINT COPY TO PRINTLN
     if (langFuncNode->functionToken.mValue == "print") {
+        if (langFuncNode->arguments.empty()) return 0;
+
         genTerminal(langFuncNode->arguments[0].get());
 
-        if (langFuncNode->arguments[0]->type() == NodeType::String) {
-            const auto* stringToken = static_cast<const String*>(langFuncNode->arguments[0].get());
-            const std::string& strToPrint = stringToken->token.mValue;
+        switch (langFuncNode->arguments[0]->type()) {
+            case (NodeType::String): {
+                const auto* stringNode = static_cast<const String*>(langFuncNode->arguments[0].get());
+                const std::string& strToPrint = stringNode->token.mValue;
 
-            size_t len = strToPrint.length() - std::count(strToPrint.begin(), strToPrint.end(), '\\');
+                size_t len = strToPrint.length() - std::count(strToPrint.begin(), strToPrint.end(), '\\');
 
-            emit("stp x29, x30, [sp, #-16]!", 1);
-            emit("ldr x1, =" + mStrings[strToPrint], 1);
+                emit("stp x29, x30, [sp, #-16]!", 1);
+                emit("ldr x1, =" + mDataStrings[strToPrint], 1);
 
-            emit("mov x2, #" + std::to_string(len), 1);
-            emit("bl WRITE", 1);
-            emit("ldp x29, x30, [sp], #16", 1);
+                emit("mov x2, #" + std::to_string(len), 1);
+                emit("bl WRITE", 1);
+                emit("ldp x29, x30, [sp], #16", 1);
+
+                break;
+            }
+            case (NodeType::Number): {
+                const auto* numNode = static_cast<const String*>(langFuncNode->arguments[0].get());
+                const std::string& strToPrint = numNode->token.mValue;
+
+                // add number you're printing to data section
+                emitData("s" + std::to_string(mStringCount) + ": .ascii \"" + strToPrint + "\"");
+                mDataStrings[strToPrint] = "s" + std::to_string(mStringCount++);
+
+                // assign the length of the buffer based on the string
+                size_t len = strToPrint.length() - std::count(strToPrint.begin(), strToPrint.end(), '\\');
+
+                // write assembly for print
+                emit("stp x29, x30, [sp, #-16]!", 1);
+                emit("ldr x1, =" + mDataStrings[strToPrint], 1);
+
+                emit("mov x2, #" + std::to_string(len), 1);
+                emit("bl WRITE", 1);
+                emit("ldp x29, x30, [sp], #16", 1);
+
+                break;
+            }
+            case (NodeType::BinaryOperation): {
+                break;
+            }
         }
     }
+    else if (langFuncNode->functionToken.mValue == "println") {
+        if (langFuncNode->arguments.empty()) {
+            printNewline(1);
+            return 0;
+        }
+
+        genTerminal(langFuncNode->arguments[0].get());
+
+        switch (langFuncNode->arguments[0]->type()) {
+            case (NodeType::String): {
+                const auto* stringNode = static_cast<const String*>(langFuncNode->arguments[0].get());
+                const std::string& strToPrint = stringNode->token.mValue;
+
+                size_t len = strToPrint.length() - std::count(strToPrint.begin(), strToPrint.end(), '\\');
+
+                emit("stp x29, x30, [sp, #-16]!", 1);
+                emit("ldr x1, =" + mDataStrings[strToPrint], 1);
+
+                emit("mov x2, #" + std::to_string(len), 1);
+                emit("bl WRITE", 1);
+                emit("ldp x29, x30, [sp], #16", 1);
+
+                break;
+            }
+            case (NodeType::Number): {
+                const auto* numNode = static_cast<const String*>(langFuncNode->arguments[0].get());
+                const std::string& strToPrint = numNode->token.mValue;
+
+                // add number you're printing to data section
+                emitData("s" + std::to_string(mStringCount) + ": .ascii \"" + strToPrint + "\"");
+                mDataStrings[strToPrint] = "s" + std::to_string(mStringCount++);
+
+                // assign the length of the buffer based on the string
+                size_t len = strToPrint.length() - std::count(strToPrint.begin(), strToPrint.end(), '\\');
+
+                // write assembly for print
+                emit("stp x29, x30, [sp, #-16]!", 1);
+                emit("ldr x1, =" + mDataStrings[strToPrint], 1);
+
+                emit("mov x2, #" + std::to_string(len), 1);
+                emit("bl WRITE", 1);
+                emit("ldp x29, x30, [sp], #16", 1);
+
+                break;
+            }
+            case (NodeType::BinaryOperation): {
+                break;
+            }
+        }
+        // print a new line at the end
+        printNewline(1);
+    }
+
+    return 0;
 }

@@ -124,25 +124,31 @@ std::unique_ptr<Node> Parser::parseFinal() {
     if (peekTokenType() == TokenType::LangFunction) {
         Token functionToken = nextToken();
         std::unique_ptr<LangFunction> function = std::make_unique<LangFunction>(functionToken);
-        do {
-            if (peekTokenType() == TokenType::ParenOpen ||
-                (peekToken().mValue == "," && peekTokenType() == TokenType::Comma)) {
 
-                nextToken(); // skip opening parenthesis or comma while in loop
-                } else {
-                    if (peekTokenType() == TokenType::EndOfFile)
-                        mErrorMessage = "Reached end of file before function call closed.";
-                    else
-                        mErrorMessage = "Unexpected token " + peekToken().mValue + " while trying to parse function call.";
-                    return nullptr;
-                }
+        // a function call must start with an opening parenthesis
+        if (peekTokenType() != TokenType::ParenOpen) {
+            if (peekTokenType() == TokenType::EndOfFile)
+                mErrorMessage = "Reached end of file before function call closed.";
+            else
+                mErrorMessage = "Unexpected token " + peekToken().mValue + " while trying to parse function call.";
+            return nullptr;
+        }
+        nextToken(); // skip opening parenthesis
 
+        // parse arguments until the closing parenthesis, so print() has none
+        while (peekTokenType() != TokenType::ParenClose) {
             std::unique_ptr<Node> argument = parseExpression();
             if (!argument) return nullptr;
-
             function->arguments.push_back(std::move(argument));
-        } while (peekToken().mValue == "," && peekTokenType() == TokenType::Comma);
-        if (peekToken().mType != TokenType::ParenClose) {
+
+            // read next if more arguments exist
+            if (peekTokenType() == TokenType::Comma)
+                nextToken();
+            else
+                break;
+        }
+
+        if (peekTokenType() != TokenType::ParenClose) {
             if (peekTokenType() == TokenType::EndOfFile)
                 mErrorMessage = "Reached end of file before function call closed.";
             else
@@ -150,7 +156,7 @@ std::unique_ptr<Node> Parser::parseFinal() {
             return nullptr;
         }
 
-        nextToken();
+        nextToken(); // skip closing parenthesis
         return function;
     }
     if (peekTokenType() == TokenType::EndOfFile) {

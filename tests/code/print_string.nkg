@@ -1,3 +1,3 @@
-print("Hello World\n");
-
-print("this is on line 3\n");print("So is this.\n", "33");
+println("Hello world");
+print(3);
+print();

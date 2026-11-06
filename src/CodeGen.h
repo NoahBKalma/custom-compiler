@@ -10,10 +10,11 @@ private:
     std::string mOutput;
     std::string mData;
     std::string mText;
-    std::unordered_map<std::string, std::string> mStrings;
+    std::unordered_map<std::string, std::string> mDataStrings;
     std::vector<std::string> mErrors;
 
     size_t mStringCount;
+    size_t mPrintNumCount;
 
     // append one instruction line to output
     void emit(const std::string&, int);
@@ -24,22 +25,27 @@ private:
     // store text, return its label
     std::string newStringData(const std::string&);
 
+    // generates code to print newline character
+    void printNewline(int indent) { emit("ldr x1, =newline\n    mov x2, #1\n    bl WRITE", 1); }
+
     // generate functions for each node type
 
-    void genTerminal(const Node*);
-
     // terminals
-    void genNumber(const Number*);
-    void genIdentifier(const Identifier*);
-    void genConstant(const Constant*);
-    void genString(const String*);
+    int genTerminal(const Node*);
+
+    int genNumber(const Number*);
+    int genIdentifier(const Identifier*);
+    int genConstant(const Constant*);
+    int genString(const String*);
 
     // nonterminals
-    void genBinaryOp(const BinaryOperation*);
-    void genNegate(const Negate*);
-    void genLangFunction(const LangFunction*);
+    int generateNonTerminal(const Node*);
 
-    int generate_(const Node*);
+    int genBinaryOp(const BinaryOperation*);
+    int genNegate(const Negate*);
+    int genLangFunction(const LangFunction*);
+
+    static bool contains(const std::string& str, const std::string& subStr) { return str.find(subStr) != std::string::npos; }
 
 public:
 

@@ -1,11 +1,9 @@
 .include "defs.inc"
 
 .data
-    newline: .ascii "
-"
-    s0: .ascii "Hello World\n"
-    s1: .ascii "this is on line 3\n"
-    s2: .ascii "So is this.\n"
+    newline: .ascii "\n"
+    s0: .ascii "Hello world"
+    s1: .ascii "3"
 
 .text
 .global _start
@@ -13,17 +11,13 @@
 _start:
     stp x29, x30, [sp, #-16]!
     ldr x1, =s0
-    mov x2, #13
+    mov x2, #11
     bl WRITE
     ldp x29, x30, [sp], #16
+    mov w0, #3
     stp x29, x30, [sp, #-16]!
     ldr x1, =s1
-    mov x2, #19
-    bl WRITE
-    ldp x29, x30, [sp], #16
-    stp x29, x30, [sp, #-16]!
-    ldr x1, =s2
-    mov x2, #13
+    mov x2, #1
     bl WRITE
     ldp x29, x30, [sp], #16
 

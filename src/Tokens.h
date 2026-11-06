@@ -45,7 +45,7 @@ namespace types {
     inline constexpr std::string_view identifiers         = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
 
     inline const std::unordered_set<std::string> langFunctions = {
-        "print"
+        "print", "println"
     };
     inline const std::unordered_map<std::string, float> constants = {
 
