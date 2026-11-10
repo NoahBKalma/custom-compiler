@@ -168,7 +168,7 @@ int main(const int argc, const char* argv[]) {
     // output and break if the lexer has errors
     if (!lexerErrors.empty()) {
         for (const std::string& errorMessage : lexerErrors) {
-            std::cerr << redText(errorMessage) << std::endl;
+            std::cerr << redText("Lexer Error: " + errorMessage) << std::endl;
         }
         return 1;
     }
@@ -177,7 +177,7 @@ int main(const int argc, const char* argv[]) {
     Parser codeParser(tokenizedCode);
 
     if (codeParser.parse() == 1) { // parse failed
-        std::cerr << redText(codeParser.getErrorMessage()) << std::endl;
+        std::cerr << redText("Parser error: " + codeParser.getErrorMessage()) << std::endl;
         return 1;
     }
     auto treeRoot = codeParser.getResultTree();

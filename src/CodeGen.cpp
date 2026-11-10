@@ -167,13 +167,19 @@ ValueType CodeGen::genNegate(const Negate* negateNode) {
     ValueType negateExpVal = generateExpression(negateNode->operand.get());
     if (negateExpVal == ValueType::Error) return ValueType::Error;
 
-    if (negateExpVal != ValueType::Int) {
-        mError = "Negate only supports ints for now.";
+    if (negateExpVal == ValueType::Int) {
+        emit("neg w0, w0");
+        return ValueType::Int;
+    }
+    else if (negateExpVal == ValueType::Float) {
+        emit("fneg s0, s0");
+        return ValueType::Int;
+    }
+    else {
+        mError = "Type not supported for negate.";
         return ValueType::Error;
     }
 
-    emit("neg w0, w0");
-    return ValueType::Int;
 }
 
 ValueType CodeGen::genLangFunction(const LangFunction* langFuncNode) {
@@ -199,6 +205,9 @@ ValueType CodeGen::genLangFunction(const LangFunction* langFuncNode) {
         }
         else if (toPrint == ValueType::Int) {
             emit("bl PRINT_INT");
+        }
+        else if (toPrint == ValueType::Float) {
+            emit("bl PRINT_FLOAT");
         }
         else {
             mError = "Cannot print this type yet";
@@ -229,6 +238,9 @@ ValueType CodeGen::genLangFunction(const LangFunction* langFuncNode) {
         }
         else if (toPrint == ValueType::Int) {
             emit("bl PRINT_INT");
+        }
+        else if (toPrint == ValueType::Float) {
+            emit("bl PRINT_FLOAT");
         }
         else {
             mError = "Cannot print this type yet";

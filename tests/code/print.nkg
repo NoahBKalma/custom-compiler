@@ -1,3 +1,8 @@
 println("Hello world");
 println(2);
-println(3     + 4);
+println(3 + (2*4));
+println(3.2);
+println(-3.2);
+println(-12345.1234567890);
+println(0.2);
+println(-0.2);

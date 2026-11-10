@@ -136,7 +136,7 @@ std::unique_ptr<Node> Parser::parseFinal() {
         }
         nextToken(); // skip opening parenthesis
 
-        // parse arguments until the closing parenthesis, so print() has none
+        // parse arguments until the closing parenthesis, so foo() has no arguments
         while (peekTokenType() != TokenType::ParenClose) {
             std::unique_ptr<Node> argument = parseExpression();
             if (!argument) return nullptr;
