@@ -5,6 +5,13 @@
 #include <unordered_set>
 #include <utility>
 
+enum class ValueType {
+    None,
+    Int,
+    Float,
+    String,
+    Error
+};
 
 // Defines token types
 enum class TokenType {

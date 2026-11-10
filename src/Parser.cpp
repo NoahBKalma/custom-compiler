@@ -34,10 +34,11 @@ int Parser::parse() {
         if (!statement) return 1;
 
         if (peekTokenType() != TokenType::Endline) {
-            if (peekTokenType() == TokenType::EndOfFile)
-                mErrorMessage = "Expected ';' at end of statement.";
+            if (peekTokenType() == TokenType::EndOfFile ||
+                peekTokenType() == TokenType::Break && peekToken().mValue == "\n")
+                mErrorMessage = "Expected ';' at end of line.";
             else
-                mErrorMessage = "Expected ';' but got " + peekToken().mValue;
+                mErrorMessage = "Expected ';' but got: " + peekToken().mValue;
             return 1;
         }
         // move past ;

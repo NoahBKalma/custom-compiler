@@ -156,7 +156,7 @@ int main(const int argc, const char* argv[]) {
     // Open for reading, argv[1] is filepath
     std::ifstream sourceCode(argv[1]);
     if (!sourceCode.is_open()) {
-        std::cerr << "Error: Could not open lexer test file." << std::endl;
+        std::cerr << "Error: Could not open source file." << std::endl;
         return 1;
     }
 
@@ -184,7 +184,10 @@ int main(const int argc, const char* argv[]) {
 
     // use the treeRoot from parser to generate start.s
     CodeGen codeGenerator;
-    codeGenerator.generate(treeRoot);
+    if (codeGenerator.generate(treeRoot) != 0) {
+        std::cerr << redText("Assembly Generator Error: " + codeGenerator.getError()) << "\n";
+        return 1;
+    }
 
     std::ofstream startFile(RUNTIME_DIR"/start.s");
     if (!startFile.is_open()) {
@@ -200,7 +203,8 @@ int main(const int argc, const char* argv[]) {
 
     if (!runCmd("as -I " RUNTIME_DIR " " RUNTIME_DIR "/start.s -o start.o")) return 1;
     if (!runCmd("as -I " RUNTIME_DIR " " RUNTIME_DIR "/syscalls.s -o syscalls.o")) return 1;
-    if (!runCmd("ld start.o syscalls.o -o program")) return 1;
+    if (!runCmd("as -I " RUNTIME_DIR " " RUNTIME_DIR "/helper-functions.s -o helper-functions.o")) return 1;
+    if (!runCmd("ld start.o syscalls.o helper-functions.o  -o program")) return 1;
 
     std::cout << greenText("\nProgram Compiled\n") << std::endl;
     return 0;

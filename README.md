@@ -6,7 +6,7 @@ Right now the language can print string literals. The lexer and parser already u
 
 ## Example
 
-`tests/code/print_string.nkg`:
+`tests/code/print.nkg`:
 
 ```
 print("Hello World\n");

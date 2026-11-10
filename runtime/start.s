@@ -3,7 +3,6 @@
 .data
     newline: .ascii "\n"
     s0: .ascii "Hello world"
-    s1: .ascii "3"
 
 .text
 .global _start
@@ -14,12 +13,13 @@ _start:
     mov x2, #11
     bl WRITE
     ldp x29, x30, [sp], #16
-    mov w0, #3
-    stp x29, x30, [sp, #-16]!
-    ldr x1, =s1
+    ldr x1, =newline
     mov x2, #1
     bl WRITE
-    ldp x29, x30, [sp], #16
+    ldr w9, =1079194419
+    fmov s0, w9
+    str w0, [sp, #-16]!
+    mov w0, #2
 
 
     ldr x1, =newline
