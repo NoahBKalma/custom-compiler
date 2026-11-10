@@ -173,7 +173,7 @@ ValueType CodeGen::genNegate(const Negate* negateNode) {
     }
     else if (negateExpVal == ValueType::Float) {
         emit("fneg s0, s0");
-        return ValueType::Int;
+        return ValueType::Float;
     }
     else {
         mError = "Type not supported for negate.";

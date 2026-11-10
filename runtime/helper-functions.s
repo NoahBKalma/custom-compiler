@@ -66,12 +66,13 @@ PRINT_FLOAT:
     mov w6, #10                     // used as constant
 
     ldr x10, =1000000
-    scvtf s1, x10                   // used as constant
+    scvtf d1, x10                   // used as constant
     mov w9, #0                      // negative flag
     ldr x7, =MAX_FLOAT_WRITE_BUFF
 
-    fmul s0, s0, s1
-    fcvtzs x0, s0                   // signed convert float to int
+    fcvt d0, s0
+    fmul d0, d0, d1
+    fcvtns x0, d0                   // signed convert float to int
     cmp x0, #0                      // make the number positive if negative but flag it
     b.ge PRINT_FLOAT_LOOP
     neg x0, x0
@@ -99,19 +100,14 @@ PRINT_FLOAT_LOOP:
 
 1:
     cmp x0, #0
-    beq 2f
-
-    b PRINT_FLOAT_LOOP
+    b.ne 90f
 
 2:
-    // add a leading 0 for numbers <1
-    cmp w8, #7                      // check for trailing 6 + '.'
-    b.ne 3f
+    cmp x8, #7
+    b.gt 3f
 
-    mov w4, #0x30
-    strb w4, [x7, x5]
-    sub w5, w5, #1
-    add w8, w8, #1
+90:
+    b PRINT_FLOAT_LOOP
 
 3:
     // add a '-' to the front of the number if negative
