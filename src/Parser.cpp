@@ -33,6 +33,17 @@ int Parser::parse() {
         std::unique_ptr<Node> statement = parseExpression();
         if (!statement) return 1;
 
+        if (peekTokenType() == TokenType::Operator && peekToken().mValue == "=") {
+            if (statement->type() != NodeType::Identifier) {
+                mErrorMessage = "Left side of '=' must be an identifier.";
+                return 1;
+            }
+            Token op = nextToken();
+            std::unique_ptr<Node> right = parseExpression();
+            if (!right) return 1;
+            statement = std::make_unique<BinaryOperation>(op, std::move(statement), std::move(right));
+        }
+
         if (peekTokenType() != TokenType::Endline) {
             if (peekTokenType() == TokenType::EndOfFile ||
                 peekTokenType() == TokenType::Break && peekToken().mValue == "\n")
@@ -73,7 +84,7 @@ std::unique_ptr<Node> Parser::parseTerm() {
     if (!left) return nullptr;
 
     while (peekTokenType() == TokenType::Operator &&
-            (peekToken().mValue == "*" || peekToken().mValue == "/")) {
+            (peekToken().mValue == "*" || peekToken().mValue == "/" || peekToken().mValue == "%")) {
         Token op = nextToken();
         std::unique_ptr<Node> right = parseFinal();
         if (!right) return nullptr;

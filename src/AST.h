@@ -7,6 +7,16 @@
 
 #include "Tokens.h"
 
+enum class ValueType {
+    None,
+    Int,
+    Float,
+    String,
+    Identifier,
+    Assignment,
+    Error
+};
+
 enum class NodeType {
     Program,
     Number, String, Identifier, Constant,

@@ -124,42 +124,103 @@ ValueType CodeGen::genString(const String* strNode) {
 
 ValueType CodeGen::genBinaryOp(const BinaryOperation* binOpNode) {
 
+    ValueType binOpMode;
+
     ValueType leftReturnVal = generateExpression(binOpNode->left.get());
     if (leftReturnVal == ValueType::Error) return ValueType::Error;
 
+    // handle identifier assignment
+    if (binOpNode->token.mValue == "=") {
+        if (leftReturnVal != ValueType::Identifier) {
+            mError = "Left side of = must be an identifier.";
+            return ValueType::Error;
+        }
+
+        // ALLOW FOR IDENTIFIER ASSIGNMENT
+        mError = "Identifier assignment not implemented yet.";
+        return ValueType::Error;
+    }
+
+    // concat strings
+    if (binOpNode->token.mValue == "+" &&
+        binOpNode->left->type() == NodeType::String && binOpNode->right->type() == NodeType::String) {
+
+    }
+
     // save value so you don't overwrite w0
-    emit("str w0, [sp, #-16]!");
+    if (leftReturnVal == ValueType::Int)
+        emit("str w0, [sp, #-16]!");
+    if (leftReturnVal == ValueType::Float)
+        emit("str s0, [sp, #-16]!");
 
     ValueType rightReturnVal = generateExpression(binOpNode->right.get());
     if (rightReturnVal == ValueType::Error) return ValueType::Error;
 
-    if (leftReturnVal != ValueType::Int || rightReturnVal != ValueType::Int) {
-        mError = "Binary operations only support ints for now";
-        return ValueType::Error;
-    }
+    // move right to register 1 and load the left back into register 0
+    if (leftReturnVal == ValueType::Int && rightReturnVal == ValueType::Int) {
+        emit("mov w1, w0");
+        emit("ldr w0, [sp], #16");
 
-    emit("mov w1, w0");                            // right now lives in w1
-    emit("ldr w0, [sp], #16");                     // left is back in w0
+        // now w0 = left, w1 = right
+        if (binOpNode->token.mValue == "+")
+            emit("add w0, w0, w1");
+        else if (binOpNode->token.mValue == "-")
+            emit("sub w0, w0, w1");
+        else if (binOpNode->token.mValue == "/")
+            emit("sdiv w0, w0, w1");
+        else if (binOpNode->token.mValue == "*")
+            emit("mul w0, w0, w1");
+        else if (binOpNode->token.mValue == "%") {
+            emit("sdiv w2, w0, w1");
+            emit("msub w0, w2, w1, w0");
+        }
+        else {
+            mError = "Unknown operator: " + binOpNode->token.mValue;
+            return ValueType::Error;
+        }
 
-    // now w0 = left, w1 = right
-    if (binOpNode->token.mValue == "+")
-        emit("add w0, w0, w1");
-    else if (binOpNode->token.mValue == "-")
-        emit("sub w0, w0, w1");
-    else if (binOpNode->token.mValue == "/")
-        emit("sdiv w0, w0, w1");
-    else if (binOpNode->token.mValue == "*")
-        emit("mul w0, w0, w1");
-    else if (binOpNode->token.mValue == "%") {
-        emit("sdiv w2, w0, w1");
-        emit("msub w0, w2, w1, w0");
+        return ValueType::Int;
+
     }
     else {
-        mError = "Unknown operator: " + binOpNode->token.mValue;
-        return ValueType::Error;
+        if (rightReturnVal == ValueType::Float) {
+            emit("fmov s1, s0");
+        }
+        else {
+            emit("scvtf s1, w0");
+        }
+
+        // get s0 whether left is an int or a float
+        if (leftReturnVal == ValueType::Float) {
+            emit("ldr s0, [sp], #16");
+        }
+        else {
+            emit("ldr w0, [sp], #16");
+            emit ("scvtf s0, w0");
+        }
+
+        // now w0 = left, w1 = right
+        if (binOpNode->token.mValue == "+")
+            emit("fadd s0, s0, s1");
+        else if (binOpNode->token.mValue == "-")
+            emit("fsub s0, s0, s1");
+        else if (binOpNode->token.mValue == "/")
+            emit("fsdiv s0, s0, s1");
+        else if (binOpNode->token.mValue == "*")
+            emit("fmul s0, s0, s1");
+        else if (binOpNode->token.mValue == "%") {
+            emit("fsdiv s2, s0, s1");
+            emit("fmsub s0, s2, s1, s0");
+        }
+        else {
+            mError = "Unknown operator: " + binOpNode->token.mValue;
+            return ValueType::Error;
+        }
+
+        return ValueType::Float;
+
     }
 
-    return ValueType::Int;
 }
 
 ValueType CodeGen::genNegate(const Negate* negateNode) {
