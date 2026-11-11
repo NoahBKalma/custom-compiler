@@ -116,6 +116,7 @@ ValueType CodeGen::genString(const String* strNode) {
 
     emitData("s" + std::to_string(mStringCount) + ": .ascii \"" + strNode->token.mValue + "\"");
     mDataStrings[strNode->token.mValue] = "s" + std::to_string(mStringCount++);
+    lastLabel = strNode->token.mValue;
 
     return ValueType::String;
 }
@@ -141,10 +142,23 @@ ValueType CodeGen::genBinaryOp(const BinaryOperation* binOpNode) {
         return ValueType::Error;
     }
 
-    // concat strings
-    if (binOpNode->token.mValue == "+" &&
-        binOpNode->left->type() == NodeType::String && binOpNode->right->type() == NodeType::String) {
+    // concat strings with +
+    if (leftReturnVal == ValueType::String && binOpNode->token.mValue == "+") {
+        std::string strLeft = lastLabel;
 
+        ValueType rightReturnVal = generateExpression(binOpNode->right.get());
+        if (rightReturnVal == ValueType::Error) return ValueType::Error;
+        if (rightReturnVal != ValueType::String) {
+            mError = "Can only add a string to another string.";
+            return ValueType::Error;
+        }
+
+        std::string strCombined = strLeft + lastLabel;
+        emitData("s" + std::to_string(mStringCount) + ": .ascii \"" + strCombined + "\"");
+        mDataStrings[strCombined] = "s" + std::to_string(mStringCount++);
+        lastLabel = strCombined;
+
+        return ValueType::String;
     }
 
     // save value so you don't overwrite w0
@@ -182,7 +196,8 @@ ValueType CodeGen::genBinaryOp(const BinaryOperation* binOpNode) {
         return ValueType::Int;
 
     }
-    else {
+    else if ((leftReturnVal == ValueType::Int || leftReturnVal == ValueType::Float) &&
+            (rightReturnVal == ValueType::Int || rightReturnVal == ValueType::Float)) {
         if (rightReturnVal == ValueType::Float) {
             emit("fmov s1, s0");
         }
@@ -205,22 +220,23 @@ ValueType CodeGen::genBinaryOp(const BinaryOperation* binOpNode) {
         else if (binOpNode->token.mValue == "-")
             emit("fsub s0, s0, s1");
         else if (binOpNode->token.mValue == "/")
-            emit("fsdiv s0, s0, s1");
+            emit("fdiv s0, s0, s1");
         else if (binOpNode->token.mValue == "*")
             emit("fmul s0, s0, s1");
         else if (binOpNode->token.mValue == "%") {
-            emit("fsdiv s2, s0, s1");
-            emit("fmsub s0, s2, s1, s0");
+            mError = "Cannot perform % on floats.";
+            return ValueType::Error;
         }
         else {
-            mError = "Unknown operator: " + binOpNode->token.mValue;
+            mError = "Unknown operation at: " + binOpNode->token.mValue;
             return ValueType::Error;
         }
 
         return ValueType::Float;
-
     }
 
+    mError = "Unknown operation at operator: " + binOpNode->token.mValue;
+    return ValueType::Error;
 }
 
 ValueType CodeGen::genNegate(const Negate* negateNode) {
@@ -252,13 +268,12 @@ ValueType CodeGen::genLangFunction(const LangFunction* langFuncNode) {
         if (toPrint == ValueType::Error) return ValueType::Error;
 
         if (toPrint == ValueType::String) {
-            const auto* stringNode = static_cast<const String*>(langFuncNode->arguments[0].get());
-            const std::string& strToPrint = stringNode->token.mValue;
+            std::string labelNum = mDataStrings[lastLabel];
 
-            size_t len = strToPrint.length() - std::count(strToPrint.begin(), strToPrint.end(), '\\');
+            size_t len = lastLabel.length() - std::count(lastLabel.begin(), lastLabel.end(), '\\');
 
             emit("stp x29, x30, [sp, #-16]!");
-            emit("ldr x1, =" + mDataStrings[strToPrint]);
+            emit("ldr x1, =" + labelNum);
 
             emit("mov x2, #" + std::to_string(len));
             emit("bl WRITE");
@@ -285,13 +300,12 @@ ValueType CodeGen::genLangFunction(const LangFunction* langFuncNode) {
         if (toPrint == ValueType::Error) return ValueType::Error;
 
         if (toPrint == ValueType::String) {
-            const auto* stringNode = static_cast<const String*>(langFuncNode->arguments[0].get());
-            const std::string& strToPrint = stringNode->token.mValue;
+            std::string labelNum = mDataStrings[lastLabel];
 
-            size_t len = strToPrint.length() - std::count(strToPrint.begin(), strToPrint.end(), '\\');
+            size_t len = lastLabel.length() - std::count(lastLabel.begin(), lastLabel.end(), '\\');
 
             emit("stp x29, x30, [sp, #-16]!");
-            emit("ldr x1, =" + mDataStrings[strToPrint]);
+            emit("ldr x1, =" + labelNum);
 
             emit("mov x2, #" + std::to_string(len));
             emit("bl WRITE");

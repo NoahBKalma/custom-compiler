@@ -14,6 +14,7 @@ private:
     std::string mError;
     std::unordered_map<std::string, int> mLocalVars; // name, count
 
+    std::string lastLabel;
     size_t mStringCount;
     size_t mPrintNumCount;
 
